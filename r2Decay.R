@@ -1,8 +1,5 @@
 rm(list = ls())
 library(here)
-library(ggplot2)
-library(dplyr)
-library(stringr)
 library(tidyverse)
 library(broom)
 
