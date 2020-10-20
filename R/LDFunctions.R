@@ -6,9 +6,14 @@
 # sep = character to split the CHR values at to get chromosome names
 splitByChrom <- function(LD, nchrom = 9, sep = "_") {
   LD.by.chroms <- vector(mode = "list", length = nchrom)
-  allmarkers <- sapply(strsplit(LD$CHR, sep), "[[", 2)
-  chroms <- unique(allmarkers)
   
+  if(sep != ""){
+    allmarkers <- sapply(strsplit(LD$CHR, sep), "[[", 2)
+    chroms <- unique(allmarkers)
+  }  else{
+    allmarkers <- LD$CHR
+    chroms <- unique(allmarkers)
+  }
   # Split into chromsome-by-chromosome list
   for(i in 1:nchrom){
     chrom <- chroms[i]
@@ -70,7 +75,6 @@ calcDist <- function(LD) {
 # LD = list of dataframes, one for each chromsome
 # Each element of the list should have a character column "CHR", and numeric colums "POS1", "POS2", "N_IND", "R.2"
 slidingWindow <- function(LD, windowSize = 100) {
-  
   library(tictoc)
   data <- vector(mode = "list", length = length(LD)+1)
   
@@ -112,6 +116,68 @@ slidingWindow <- function(LD, windowSize = 100) {
   names(data) <- listNames
   return(data)
 }
+
+
+
+
+
+
+# As above, but with non-overlapping windows
+nonOverlappingWindow <- function(LD, windowSize = 100) {
+  library(tictoc)
+  data <- vector(mode = "list", length = length(LD)+1)
+  
+  for(i in 1:length(LD)){
+    tic()
+    
+    r2.file <- LD[[i]]
+    
+    data.sub <- matrix(data = NA, nrow = ceiling(nrow(r2.file)/windowSize), ncol = 2)
+    colnames(data.sub) <- c("POS", "R2")
+    
+    print(paste("Processing chromsome", i))
+    
+    endPoint <- 0
+    start <- which(r2.file$POS1 > endPoint)[1]
+    end <- start+(windowSize - 1)
+    
+    j <- 1
+    
+    while(is.na(r2.file[end, 3]) == F)  {
+      r2.sub <- r2.file[c(start:end),]
+      
+      data.sub[j, 1] <- mean(r2.sub$POS1)
+      data.sub[j, 2] <- mean(r2.sub$R.2)
+      j <- j + 1
+      
+      endPoint <- r2.sub[windowSize,3]
+      start <- which(r2.file$POS1 > endPoint)[1]
+      end <- start+(windowSize - 1)
+    }
+    data.sub <- as.data.frame(data.sub)
+    data.sub <- data.sub[is.na(data.sub$POS) == F,]
+    
+    data.sub$chrom <- i
+    data.sub <- data.sub[,c(3,1,2)]
+    colnames(data.sub) <- c("chr", "bp", "r2")
+    data[[i]] <- data.sub
+    toc()
+  }
+  
+  
+  data[[length(LD)+1]] <- do.call("rbind", data)
+  listNames <- as.character(seq(1:length(data)))
+  listNames[length(LD)+1] <- "all"
+  names(data) <- listNames
+  return(data)
+}
+
+
+
+
+
+
+
 
 
 # Fit exponential decay to the LD pair data
