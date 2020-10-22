@@ -24,6 +24,7 @@ splitByChrom <- function(LD, nchrom = 9, sep = "_") {
 }
 
 
+
 # Get the distance between pairs of markers of VCFtools, or similar program,
 # into chromsome-by-chromosome list
 # INPUT
@@ -82,8 +83,8 @@ slidingWindow <- function(LD, windowSize = 100) {
     tic()
     
     r2.file <- LD[[i]]
-    data.sub <- matrix(data = NA, nrow = ceiling(nrow(r2.file)/windowSize), ncol = 2)
-    colnames(data.sub) <- c("POS", "R2")
+    data.sub <- matrix(data = NA, nrow = ceiling(nrow(r2.file)/windowSize), ncol = 3)
+    colnames(data.sub) <- c("POS", "R2", "DIST")
     
     bins <- seq(from=1,to=nrow(r2.file),by=windowSize)
     
@@ -91,20 +92,25 @@ slidingWindow <- function(LD, windowSize = 100) {
     
     for(j in 1:(length(bins)-1)){
       r2.sub <- r2.file[c(bins[j]:(bins[j]+(windowSize - 1))),]
+      r2.sub$DIST <- r2.sub$POS2 - r2.sub$POS1
       data.sub[j, 1] <- mean(r2.sub$POS1)
       data.sub[j, 2] <- mean(r2.sub$R.2)
+      data.sub[j, 3] <- mean(r2.sub$DIST)
     }
     
     # Last bin
     j <- j+1
     r2.sub <- r2.file[c(bins[j]:nrow(r2.file)),]
+    r2.sub$DIST <- r2.sub$POS2 - r2.sub$POS1
     data.sub[j, 1] <- mean(r2.sub$POS1)
     data.sub[j, 2] <- mean(r2.sub$R.2)
+    data.sub[j, 3] <- mean(r2.sub$DIST)
+    
     data.sub <- as.data.frame(data.sub)
     
     data.sub$chrom <- i
-    data.sub <- data.sub[,c(3,1,2)]
-    colnames(data.sub) <- c("chr", "bp", "r2")
+    data.sub <- data.sub[,c(4,1,2,3)]
+    colnames(data.sub) <- c("chr", "bp", "r2", "dist")
     data[[i]] <- data.sub
     toc()
   }
@@ -122,7 +128,9 @@ slidingWindow <- function(LD, windowSize = 100) {
 
 
 
-# As above, but with non-overlapping windows
+# As above, but with non-overlapping windows -- i.e., the start point of the next window
+# is the position of the SNP farthest away from the previous SNP's 100-SNP bin.  I think this is what 
+# Shelby asked me to compare.
 nonOverlappingWindow <- function(LD, windowSize = 100) {
   library(tictoc)
   data <- vector(mode = "list", length = length(LD)+1)
@@ -164,16 +172,16 @@ nonOverlappingWindow <- function(LD, windowSize = 100) {
     toc()
   }
   
-  
+  # Add in the entire dataset
   data[[length(LD)+1]] <- do.call("rbind", data)
+  
+  # Name the list elements after the chroms
   listNames <- as.character(seq(1:length(data)))
   listNames[length(LD)+1] <- "all"
   names(data) <- listNames
+  
   return(data)
 }
-
-
-
 
 
 
