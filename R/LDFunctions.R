@@ -9,10 +9,10 @@ splitByChrom <- function(LD, nchrom = 9, sep = "_") {
   
   if(sep != ""){
     allmarkers <- sapply(strsplit(LD$CHR, sep), "[[", 2)
-    chroms <- unique(allmarkers)
+    chroms <- order(unique(allmarkers))
   }  else{
     allmarkers <- LD$CHR
-    chroms <- unique(allmarkers)
+    chroms <- order(unique(allmarkers))
   }
   # Split into chromsome-by-chromosome list
   for(i in 1:nchrom){
