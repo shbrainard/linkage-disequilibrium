@@ -3,3 +3,6 @@
 data/
 R/.DS_Store
 R/.Rhistory
+
+# Per-machine settings, which can record command lines with tokens
+**/.claude/settings.local.json
